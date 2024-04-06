@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>netstandard2.1</TargetFramework>
+		<AssemblyName>com.template.guid</AssemblyName>
+		<Product>Template</Product>
+		<Description>A template mod for making new mods</Description>
+		<Version>0.0.0</Version>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<LangVersion>latest</LangVersion>
+
+		<ThunderDeps>["BepInEx-BepInExPack-5.4.2100"]</ThunderDeps>
+		<ThunderURL>https://github.com/AdalynBlack/LCTemplate</ThunderURL>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
+		<PackageReference Include="BepInEx.Core" Version="5.*"/>
+		<PackageReference Include="BepInEx.PluginInfoProps" Version="1.*"/>
+		<PackageReference Include="UnityEngine.Modules" Version="2022.3.9" IncludeAssets="compile" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Reference Include="Assembly-CSharp" Publicize="true">
+			<HintPath>$(LC_PATH)\Lethal Company_Data\Managed\Assembly-CSharp.dll</HintPath>
+		</Reference>
+		<Reference Include="Assembly-CSharp-firstpass">
+			<HintPath>$(LC_PATH)\Lethal Company_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+		</Reference>
+		<Reference Include="LethalConfig">
+			<HintPath>.\Deps\Soft\LethalConfig.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
+		<PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="all" />
+	</ItemGroup>
+
+	<Target Name="PackageThunderstore" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+		<Message Text="Zipping Files for Thunderstore" Importance="High"/>
+		<Delete Files="$(Product)Thunderstore.zip"/>
+		<WriteLinesToFile File="manifest.json" Lines="{&quot;name&quot;: &quot;$(Product)&quot;,&quot;description&quot;: &quot;$(Description)&quot;,&quot;version_number&quot;: &quot;$(Version)&quot;,&quot;dependencies&quot;: $(ThunderDeps),&quot;website_url&quot;: &quot;$(ThunderURL)&quot;}" Overwrite="true"/>
+		<Exec Command="zip -j $(Product)Thunderstore.zip README.md icon.png bin/Release/$(TargetFramework)/$(AssemblyName).dll manifest.json"/>
+		<Exec Command="zip -j $(Product)Thunderstore.zip PackageAdditions/*"/>
+		<Delete Files="manifest.json"/>
+	</Target>
+
+	<Target Name="AddChangelogToPackage" AfterTargets="PackageThunderstore" Condition="'$(Configuration)' == 'Release' And Exists('CHANGELOG.md')">
+		<Message Text="Adding Changelog to Package" Importance="High"/>
+		<Exec Command="zip $(Product)Thunderstore.zip CHANGELOG.md"/>
+	</Target>
+
+	<Target Name="AddToProfile" AfterTargets="Build">
+		<Message Text="Copying Compiled Mod $(Product) to Profile Plugins Folder" Importance="High"/>
+		<Copy SourceFiles="bin/$(Configuration)/$(TargetFramework)/$(AssemblyName).dll" DestinationFolder="$(PROFILE_PATH)"/>
+	</Target>
+</Project>
